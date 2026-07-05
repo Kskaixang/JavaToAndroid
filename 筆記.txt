@@ -3,4 +3,32 @@
 3.設定oracle虛擬機 看能不能為第二伺服器做部署 (已經取得)
 4.複習怎麼運行CICD 我希望移動端能直連oracle
 
+5.git 金鑰設定
+回到專案首頁：
 
+點選您截圖選單中的 Repositories (在 Code, planning, and automation 下方)。
+在清單中點選進入您的 JavaToAndroid 專案頁面。
+進入專案的 Settings：
+
+進入專案頁面後，在專案名稱下方，會看到一排橫向的標籤頁（像是 Code、Issues、Actions 等）。
+點選最右邊的 Settings (設定) 標籤頁（圖示是一個齒輪 ⚙️）。
+找到 Secrets 設定區：
+
+點進專案的 Settings 後，看左側的選單。
+往下滾動，找到 Secrets and variables 區塊，點擊它展開。
+點選展開後的 Actions。
+這樣就能看到綠色的 New repository secret 按鈕了！
+
+
+scp -i C:\workspace\JavaToAndroid\SpringToAndroid\ssh-key-2026-07-05.key .\SpringToAndroid-0.0.1-SNAPSHOT.jar .\Dockerfile .\docker-compose.yml opc@161.33.157.67:/home/opc/
+
+
+
+[x] 步驟一：建立 Docker 設定檔（已完成，即您的 Dockerfile 與 docker-compose.yml）
+[ ] 步驟二：建立 GitHub 自動部署檔 (deploy.yml)（目前檔案已填好，但尚未上傳）
+[ ] 步驟三：設定 GitHub 的加密後台 (Secrets)（需要您的 Docker Hub Token 和 Oracle 金鑰）
+[ ] 步驟四：用 Git 將所有檔案 Push 到 GitHub 上
+[ ] 步驟五：在 Oracle 伺服器上安裝 Docker 並啟動連線
+
+
+6.android不適合使用lombok
