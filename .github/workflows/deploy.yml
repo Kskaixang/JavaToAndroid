@@ -21,7 +21,9 @@ jobs:
 
       # 1. 進入子資料夾 SpringToAndroid 編譯 JAR 檔
       - name: Build with Maven
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
         working-directory: SpringToAndroid
 
       # 2. 登入 Docker Hub (使用寫死的帳號 ks995)
