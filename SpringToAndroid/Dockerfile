@@ -1,5 +1,5 @@
 # 使用輕量級的 Java 21 執行環境作為基底
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jre
 
 # 設定容器內的工作目錄
 WORKDIR /app
