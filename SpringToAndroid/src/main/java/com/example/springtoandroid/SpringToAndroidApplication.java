@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 // 【這是正確的 4.x 新路徑】
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
-// 排除 DataSourceAutoConfiguration，這樣即使沒有設定資料庫，程式也能順利啟動
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication
 public class SpringToAndroidApplication {
 
     public static void main(String[] args) {
