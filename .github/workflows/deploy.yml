@@ -74,7 +74,7 @@ jobs:
             if ! command -v docker &> /dev/null; then
               echo "Docker not found. Installing..."
               sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-              sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+              sudo dnf install -y --allowerasing docker-ce docker-ce-cli containerd.io docker-compose-plugin
               sudo systemctl start docker
               sudo systemctl enable docker
               sudo usermod -aG docker opc
