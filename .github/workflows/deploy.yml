@@ -80,7 +80,14 @@ jobs:
               echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
             fi
 
-            # 2. 檢查是否已安裝 Docker，若無則自動安裝
+            # 2. 檢查並清除 DNF 鎖定，防止背景自動更新卡死安裝
+            if [ -f /var/run/dnf.pid ]; then
+              echo "DNF is locked by process $(cat /var/run/dnf.pid). Clearing lock..."
+              sudo kill -9 $(cat /var/run/dnf.pid) 2>/dev/null || true
+              sudo rm -f /var/run/dnf.pid
+            fi
+
+            # 3. 檢查是否已安裝 Docker，若無則自動安裝
             if ! command -v docker &> /dev/null; then
               echo "Docker not found. Installing..."
               sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -90,10 +97,10 @@ jobs:
               sudo usermod -aG docker opc
             fi
             
-            # 3. 建立資料夾並進入
+            # 4. 建立資料夾並進入
             mkdir -p /home/opc/app
             cd /home/opc/app
             
-            # 4. 拉取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
+            # 5. 批取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
             sudo docker compose pull
             sudo docker compose up -d
