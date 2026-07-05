@@ -1,0 +1,6 @@
+1.重設git token 安裝IDE android 專案
+2.安裝 android API34 啟動虛擬機 
+3.設定oracle虛擬機 看能不能為第二伺服器做部署 (已經取得)
+4.複習怎麼運行CICD 我希望移動端能直連oracle
+
+

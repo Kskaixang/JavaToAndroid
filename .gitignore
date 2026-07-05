@@ -1,0 +1,8 @@
+*.key
+*.pem
+.idea/
+.gradle/
+*.class
+target/
+build/
+local.properties

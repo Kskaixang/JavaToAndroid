@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # 1. MySQL 資料庫服務
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: springtoandroid
+      TZ: Asia/Taipei
+    ports:
+      - "3306:3306"
+    volumes:
+      # 將資料庫檔案持久化存儲，防止容器重啟後資料遺失
+      - mysql_data:/var/lib/mysql
+
+  # 2. Spring Boot 後端 API 服務
+  springboot-app:
+    image: ks995/springtoandroid:latest  # 已寫死您的 Docker Hub 專案名稱
+    container_name: springboot-api
+    restart: always
+    ports:
+      - "8088:8080"  # 外網連入 8088，對應到容器內部的 8080
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/springtoandroid?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Taipei
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpassword
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - mysql-db
+
+volumes:
+  mysql_data:
