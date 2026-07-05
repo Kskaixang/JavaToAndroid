@@ -13,6 +13,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.example.javatoandroid.BuildConfig; // 手動引入自動生成的 BuildConfig 類別
 
 // 宣告類別，MainActivity 繼承自 AppCompatActivity (Android 的標準 Activity 視窗基底)
 public class MainActivity extends AppCompatActivity {
@@ -23,13 +24,13 @@ public class MainActivity extends AppCompatActivity {
     private Button fetchTimeButton;
     // 宣告自訂定義 API 連線介面的 ApiService 變數
     private ApiService apiService;
-    // 設定為 true 代表「本機模擬器測試」；設定為 false 代表「連線到 Oracle 雲端伺服器」
-    private static final boolean IS_LOCAL_TEST = false;
     // 當 Activity 視窗被建立時，Android 系統會自動觸發這個生命週期方法
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 根據開關動態決定連線網址
-        String baseUrl = IS_LOCAL_TEST ? "http://10.0.2.2:8080/" : "http://161.33.157.67:8088/";
+        // 根據 islocaltest.properties 其中的開關 is.local.test=??? 動態決定連線網址
+        // 此處會是默認 oracle 用的 false 因為有特地撰寫 忽略properties的追蹤 所以pull下來都會是一致結果
+        // 如果你想新建開發模式 就要重建  islocaltest.properties開關 is.local.test=true
+        String baseUrl = BuildConfig.IS_LOCAL_TEST ? "http://10.0.2.2:8080/" : "http://161.33.157.67:8088/";
 
         // 呼叫父類別的 onCreate 方法，執行視窗的基礎系統初始化
         super.onCreate(savedInstanceState);
