@@ -1,3 +1,5 @@
+第一階段 框架規劃
+
 1.重設git token 安裝IDE android 專案
 2.安裝 android API34 啟動虛擬機 
 3.設定oracle虛擬機 看能不能為第二伺服器做部署 (已經取得)
@@ -20,15 +22,148 @@
 這樣就能看到綠色的 New repository secret 按鈕了！
 
 
-scp -i C:\workspace\JavaToAndroid\SpringToAndroid\ssh-key-2026-07-05.key .\SpringToAndroid-0.0.1-SNAPSHOT.jar .\Dockerfile .\docker-compose.yml opc@161.33.157.67:/home/opc/
-
-
-
 [x] 步驟一：建立 Docker 設定檔（已完成，即您的 Dockerfile 與 docker-compose.yml）
 [ ] 步驟二：建立 GitHub 自動部署檔 (deploy.yml)（目前檔案已填好，但尚未上傳）
 [ ] 步驟三：設定 GitHub 的加密後台 (Secrets)（需要您的 Docker Hub Token 和 Oracle 金鑰）
 [ ] 步驟四：用 Git 將所有檔案 Push 到 GitHub 上
 [ ] 步驟五：在 Oracle 伺服器上安裝 Docker 並啟動連線
 
+==============================
 
-6.android不適合使用lombok
+第二階段 SQL 互通 oracle
+
+用 PowerShell 建立通道
+請在您的電腦上打開 PowerShell（或命令提示字元 CMD）。
+複製並貼上執行以下指令（這會用 Windows 內建的安全連線，把遠端資料庫映射到本機的 3307 Port）：
+powershell
+
+
+ssh -L 3307:127.0.0.1:3306 -i C:\Users\使用者\Downloads\ssh-key-2026-07-05.key opc@161.33.157.67
+執行後，如果終端機詢問 Are you sure you want to continue connecting (yes/no/[fingerprint])?，請輸入 yes 並按 Enter。
+【重要】請保持這個 PowerShell 視窗開啟，不要關閉它！（關閉通道就會斷開）。
+第二步：在 MySQL Workbench 進行標準連線
+回到您的 MySQL Workbench，重新建立一個最簡單的連線：
+
+Connection Method: 選擇預設的 Standard (TCP/IP) (不要用帶有 SSH 的選項)
+Hostname: 127.0.0.1 (維持本機)
+Port: 改成 3307 (因為剛才在 PowerShell 把遠端資料庫接到了本機的 3307)
+Username: root
+Password: 點擊 Store in Vault 輸入您 Docker MySQL 的密碼（例如 123456 等）。
+設定好之後點選 Test Connection，您就會發現順利連上了，而且絕對不會再閃退！
+
+
+======================
+
+第三階段
+
+ 後端三層架構規劃 (Spring Boot)
+2.1 Repository 層 (資料存取)
+直接對接 Oracle DB，負責基礎 CRUD 封裝。
+
+UserRepository: 查詢餘額、更新餘額。
+
+PositionRepository: 依據 userId 查詢所有持股、依據 userId 與 stockSymbol 查詢單一持股、更新持股數量與成本。
+
+TransactionRepository: 新增交易紀錄、依據 userId 查詢歷史交易紀錄 (支援分頁)。
+
+2.2 Service 層 (商業邏輯)
+處理核心防呆與交易計算。
+
+UserService:
+
+處理帳戶初始化與餘額查詢。
+
+PortfolioService:
+
+整合使用者目前的持股清單與平均成本。
+
+TradeService:
+
+buyStock(): 檢查餘額是否大於 (總價+手續費) -> 扣除餘額 -> 新增/更新 Position -> 寫入 Transaction。
+
+sellStock(): 檢查 Position 股數是否足夠 -> 增加餘額 (總價-手續費) -> 扣除 Position 股數 (若為0則刪除該筆) -> 寫入 Transaction。
+
+註：Service 層需加上 Transactional 確保這三個資料庫動作同時成功或失敗。
+
+2.3 Controller 層 (RESTful API 端點)
+負責接收 Android 請求，驗證參數格式，並回傳 JSON 結果。
+
+UserController:
+
+GET /api/users/{id} (取得餘額與基本資料)
+
+PortfolioController:
+
+GET /api/portfolio/{userId} (取得持股清單)
+
+TradeController:
+
+POST /api/trade/buy (接收買單參數：股號、數量、價格)
+
+POST /api/trade/sell (接收賣單參數：股號、數量、價格)
+
+GET /api/trade/history/{userId} (取得交易紀錄清單)
+
+
+
+
+ 查詢餘額 (GET /api/users/{id})
+T 的對應型別為 單一 User 物件。
+
+JSON
+{
+  "status": 200,
+  "message": "查詢成功",
+  "data": {
+    "id": 1,
+    "username": "tester",
+    "balance": 1000000.00
+  }
+}
+2. 取得持股清單 (GET /api/portfolio/{userId})
+T 的對應型別為 陣列 (List)。
+
+JSON
+{
+  "status": 200,
+  "message": "查詢成功",
+  "data": [
+    {
+      "id": 1,
+      "stockSymbol": "2330",
+      "quantity": 1000,
+      "averageCost": 800.0
+    },
+    {
+      "id": 2,
+      "stockSymbol": "2317",
+      "quantity": 2000,
+      "averageCost": 150.0
+    }
+  ]
+}
+3. 交易成功 (POST /api/trade/buy 或 sell)
+T 的對應型別為 該筆交易的明細。
+
+JSON
+{
+  "status": 200,
+  "message": "委託買入成功",
+  "data": {
+    "stockSymbol": "2330",
+    "tradeType": "BUY",
+    "quantity": 1000,
+    "price": 810.0,
+    "fee": 1154.0,
+    "totalAmount": 811154.0
+  }
+}
+4. 交易失敗 (錯誤處理)
+利用你寫好的 error(int status, String message) 方法，data 放 null。
+
+JSON
+{
+  "status": 400,
+  "message": "帳戶餘額不足以支付總金額與手續費",
+  "data": null
+}

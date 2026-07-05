@@ -61,4 +61,42 @@ dependencies {
     // HTTP 連線與 JSON 解析 (Retrofit + Gson)
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+    // 在每次編譯完 Debug 版本時，自動將 APK 複製到專案最外層根目錄
+    // 支援雙路徑檢查的自動複製腳本
+    tasks.whenTaskAdded { task ->
+        if (task.name == 'assembleDebug') {
+            task.doLast {
+                // 定義兩個可能產生 APK 的路徑
+                def pathOutputs = file("${project.buildDir}/outputs/apk/debug/app-debug.apk")
+                def pathIntermediates = file("${project.buildDir}/intermediates/apk/debug/app-debug.apk")
+                def targetDir = project.rootDir
+
+                // 進行雙重判定
+                def sourceApk = null
+                if (pathOutputs.exists()) {
+                    sourceApk = pathOutputs
+                } else if (pathIntermediates.exists()) {
+                    sourceApk = pathIntermediates
+                }
+
+                println "=============================================="
+                println "【APK 自動複製偵錯資訊】"
+                println "1. Outputs 來源是否存在: " + pathOutputs.exists()
+                println "2. Intermediates 來源是否存在: " + pathIntermediates.exists()
+                println "3. 預期目的地目錄: " + targetDir.absolutePath
+
+                if (sourceApk != null) {
+                    copy {
+                        from sourceApk
+                        into targetDir
+                    }
+                    println "====== ✅ APK 複製完成！來源為: " + sourceApk.absolutePath + " ======"
+                } else {
+                    println "====== ❌ 複製失敗：找不到任何來源 APK 檔案！ ======"
+                }
+                println "=============================================="
+            }
+        }
+    }
 }
