@@ -70,7 +70,17 @@ jobs:
           key: ${{ secrets.ORACLE_SSH_KEY }} # 這是連線金鑰，必須用 GitHub 保險箱
           port: 22
           script: |
-            # 1. 檢查是否已安裝 Docker，若無則自動安裝
+            # 1. 檢查並設定 Swap 虛擬記憶體 (1GB 主機必做，防止記憶體不足被系統殺除)
+            if [ ! -f /swapfile ]; then
+              echo "Creating 4GB Swap file..."
+              sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+            fi
+
+            # 2. 檢查是否已安裝 Docker，若無則自動安裝
             if ! command -v docker &> /dev/null; then
               echo "Docker not found. Installing..."
               sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -80,10 +90,10 @@ jobs:
               sudo usermod -aG docker opc
             fi
             
-            # 2. 建立資料夾並進入
+            # 3. 建立資料夾並進入
             mkdir -p /home/opc/app
             cd /home/opc/app
             
-            # 3. 拉取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
+            # 4. 拉取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
             sudo docker compose pull
             sudo docker compose up -d
