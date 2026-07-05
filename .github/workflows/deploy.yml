@@ -61,7 +61,7 @@ jobs:
           target: "/home/opc/app"
           strip_components: 1 # 去除 SpringToAndroid/ 前綴，讓檔案直接存為 /home/opc/app/docker-compose.yml
 
-      # 5. SSH 連線進 Oracle 啟動 Docker
+      # 5. SSH 連線進 Oracle 自動安裝 Docker 並啟動服務
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -70,7 +70,20 @@ jobs:
           key: ${{ secrets.ORACLE_SSH_KEY }} # 這是連線金鑰，必須用 GitHub 保險箱
           port: 22
           script: |
+            # 1. 檢查是否已安裝 Docker，若無則自動安裝
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found. Installing..."
+              sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+              sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker opc
+            fi
+            
+            # 2. 建立資料夾並進入
             mkdir -p /home/opc/app
             cd /home/opc/app
-            docker compose pull
-            docker compose up -d
+            
+            # 3. 拉取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
+            sudo docker compose pull
+            sudo docker compose up -d
