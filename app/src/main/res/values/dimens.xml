@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 數據型字體尺寸定義 (已全面加大 2sp 供全專案抽取管理) -->
+    <dimen name="text_size_data_large">24sp</dimen>     <!-- 大字現價區 (原26sp -> 現28sp) -->
+    <dimen name="text_size_data_medium">18sp</dimen>    <!-- 中字數據/座標/輸入欄 (原14sp -> 現16sp) -->
+    <dimen name="text_size_data_small">16sp</dimen>     <!-- 小字圖表標籤/限價虛線 (原12sp -> 現14sp) -->
+</resources>

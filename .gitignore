@@ -9,3 +9,4 @@ local.properties
 islocaltest.properties
 compiler.xml
 build.gradle
+gradle.xml

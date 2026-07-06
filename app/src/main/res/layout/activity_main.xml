@@ -1,47 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  股票模擬交易 - 主畫面外殼佈局
+  夜間簡約工程模式：整合 Google 圓形頭像按鈕 與 現代化嵌入式搜尋欄
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#121212">
 
-    <!-- 頂部搜尋列：夜間工程模式，極度壓縮空間 -->
+    <!-- 頂部導覽搜尋列 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:paddingVertical="12dp"
+        android:paddingHorizontal="16dp"
         android:background="#1E1E1E"
         android:gravity="center_vertical">
         
-        <EditText
-            android:id="@+id/etStockSymbol"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="2330.TW" 
-            android:hint="輸入股號"
-            android:textColorHint="#757575"
-            android:textColor="#E0E0E0"
-            android:inputType="text"
-            android:padding="8dp"
-            android:backgroundTint="#424242" />
+        <!-- 用戶頭像容器 (確保左側佔用 58dp，達成置中對稱) -->
+        <FrameLayout
+            android:layout_width="58dp"
+            android:layout_height="38dp">
+            <ImageView
+                android:id="@+id/ivUserAvatar"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="start|center_vertical"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:background="@android:color/transparent"
+                android:scaleType="centerCrop"
+                android:contentDescription="用戶帳戶"
+                android:clickable="true"
+                android:focusable="true" />
+        </FrameLayout>
             
-        <Button
+        <!-- 現代化嵌入式搜尋欄 (置中輸入框) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="38dp"
+            android:orientation="horizontal"
+            android:background="#2C2C2C"
+            android:gravity="center"
+            android:layout_marginHorizontal="12dp">
+
+            <!-- 股票代號輸入框：文字置中，字體 16sp -->
+            <EditText
+                android:id="@+id/etStockSymbol"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="2330" 
+                android:hint="輸入股票代號"
+                android:textColorHint="#666666"
+                android:textColor="#E0E0E0"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:background="@null"
+                android:singleLine="true"
+                android:gravity="center"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- 搜尋按鈕：方塊狀小按鈕 (寬度完全對稱 58dp，文字置中，比照重置按鈕) -->
+        <TextView
             android:id="@+id/btnSearch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔍"
-            android:textSize="18sp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp"
-            android:layout_marginStart="8dp"
-            android:backgroundTint="#333333"
-            android:textColor="#FFFFFF" />
+            android:layout_width="58dp"
+            android:layout_height="38dp"
+            android:gravity="center"
+            android:text="搜尋"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:background="#2C2C2C"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
+    <!-- K線與下單核心 Fragment 容器 -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"

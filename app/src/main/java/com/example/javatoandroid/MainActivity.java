@@ -1,61 +1,196 @@
 package com.example.javatoandroid;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
- * 重構後的主畫面 (Activity)。
- * 現在它不再身兼多職 (不再親自處理圖表與 API)，而是成為一個純粹的「外殼」。
- * 它的唯一工作是：提供上方搜尋列，並將使用者的指令傳遞給裝載於內部的 Fragment。
- * 這樣設計能大幅降低維護難度！
+ * 主畫面 Activity (外殼控制項)
+ * - 負責頂部導覽列：包含 Google 登入模擬狀態與圓形頭像按鈕
+ * - 整合現代化嵌入式搜尋欄 (放大鏡與輸入框)
  */
 public class MainActivity extends AppCompatActivity {
 
+    private ImageView ivUserAvatar;
+    private TextView btnSearch;
     private EditText etStockSymbol;
-    private Button btnSearch;
     private StockChartFragment stockChartFragment;
+
+    // 用於本機儲存使用者登入狀態與 Token
+    private SharedPreferences sharedPreferences;
+    private static final String PREF_NAME = "UserPrefs";
+    private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
+    private static final String KEY_GOOGLE_TOKEN = "googleToken";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 綁定主畫面佈局 (內含搜尋列 + Fragment 空白容器)
         setContentView(R.layout.activity_main);
 
-        // 綁定上方搜尋列的輸入框與按鈕
-        etStockSymbol = findViewById(R.id.etStockSymbol);
-        btnSearch = findViewById(R.id.btnSearch);
+        // 初始化 SharedPreferences
+        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
-        // 步驟 1：建立並裝載 StockChartFragment 
-        // 這就是組件化 (Component-based) 的精髓
+        // 綁定 UI 元件
+        ivUserAvatar = findViewById(R.id.ivUserAvatar);
+        btnSearch = findViewById(R.id.btnSearch);
+        etStockSymbol = findViewById(R.id.etStockSymbol);
+
+        // 步驟 1：載入並裝載 K 線圖 Fragment
         if (savedInstanceState == null) {
             stockChartFragment = new StockChartFragment();
-            // 透過 FragmentManager，把我們寫好的 K 線圖 Fragment 塞進畫面的容器中
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragmentContainer, stockChartFragment)
                     .commit();
         } else {
-            // 如果手機翻轉螢幕導致重建，就從系統找回已經存在的 Fragment
             stockChartFragment = (StockChartFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
         }
 
-        // 步驟 2：監聽搜尋按鈕的點擊
-        btnSearch.setOnClickListener(v -> {
-            // 取得使用者輸入的字串，去除前後空白
-            String symbol = etStockSymbol.getText().toString().trim();
-            if (!symbol.isEmpty() && stockChartFragment != null) {
-                // 【核心串接】把代號丟給子組件 Fragment，讓它自己去跑網路請求與畫圖
-                stockChartFragment.setStockSymbol(symbol);
-                
-                // (貼心小功能) 按下搜尋後，立刻自動隱藏手機的虛擬小鍵盤
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null && getCurrentFocus() != null) {
-                    imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-                }
+        // 步驟 2：初始化/還原登入狀態 (檢查 Token)
+        checkAndSyncLoginState();
+
+        // 步驟 3：設定搜尋事件 (支援點選 🔍 或鍵盤右下角的「搜尋」鍵)
+        btnSearch.setOnClickListener(v -> performSearch());
+        etStockSymbol.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                performSearch();
+                return true;
+            }
+            return false;
+        });
+
+        // 步驟 4：設定 Google 頭像按鈕點擊監聽
+        ivUserAvatar.setOnClickListener(v -> {
+            boolean isLoggedIn = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
+            if (isLoggedIn) {
+                // 已登入：跳出模擬的漢堡選單 (常規功能選單)
+                showUserMenu();
+            } else {
+                // 未登入：啟動模擬的 Google 授權登入流程
+                triggerGoogleLogin();
             }
         });
+    }
+
+    /**
+     * 執行股票代號搜尋
+     */
+    private void performSearch() {
+        String symbol = etStockSymbol.getText().toString().trim();
+        if (!symbol.isEmpty() && stockChartFragment != null) {
+            // 切割出純代碼 (例如 "2330 台積電" ➔ "2330") 傳遞給圖表子組件
+            stockChartFragment.setStockSymbol(symbol);
+
+            // 收起虛擬鍵盤
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null && getCurrentFocus() != null) {
+                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            }
+        } else {
+            Toast.makeText(this, "請輸入股票代號", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 檢查並同步使用者的 Google 登入頭像狀態
+     */
+    private void checkAndSyncLoginState() {
+        boolean isLoggedIn = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
+        if (isLoggedIn) {
+            // 已登入：將頭像改為綠色的已驗證打勾小人 (代表 Google 登入狀態)
+            ivUserAvatar.setImageResource(android.R.drawable.presence_online);
+            ivUserAvatar.setBackgroundColor(Color.parseColor("#4CAF50")); // 綠底
+        } else {
+            // 未登入：維持預設淡灰色位置圖標
+            ivUserAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
+            ivUserAvatar.setBackgroundColor(Color.TRANSPARENT);
+        }
+    }
+
+    /**
+     * 觸發模擬的 Google 登入程序
+     */
+    private void triggerGoogleLogin() {
+        Toast.makeText(this, "正在轉跳 Google 授權登入...", Toast.LENGTH_SHORT).show();
+        
+        // 延時模擬登入成功 (存入 Token，維持登入狀態)
+        ivUserAvatar.postDelayed(() -> {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean(KEY_IS_LOGGED_IN, true);
+            editor.putString(KEY_GOOGLE_TOKEN, "mock-google-oauth2-token-20260706");
+            editor.apply();
+
+            checkAndSyncLoginState();
+            Toast.makeText(MainActivity.this, "Google 登入成功！(Token 已存入本機免登)", Toast.LENGTH_LONG).show();
+        }, 1200);
+    }
+
+    /**
+     * 顯示已登入使用者的漢堡選單 (PopupWindow)
+     */
+    private void showUserMenu() {
+        // 動態建立一個簡單的選單佈局
+        LinearLayout menuLayout = new LinearLayout(this);
+        menuLayout.setOrientation(LinearLayout.VERTICAL);
+        menuLayout.setBackgroundColor(Color.parseColor("#262626"));
+        menuLayout.setPadding(24, 24, 24, 24);
+
+        // 準備選單功能項目
+        String[] menuItems = {"個人帳戶資訊", "委託歷史紀錄", "安全與隱私設定", "登出帳戶"};
+        for (String itemText : menuItems) {
+            TextView tv = new TextView(this);
+            tv.setText(itemText);
+            tv.setTextColor(Color.WHITE);
+            tv.setTextSize(14f);
+            tv.setPadding(24, 18, 24, 18);
+            tv.setClickable(true);
+            tv.setFocusable(true);
+            
+            // 設定點擊背景高亮
+            tv.setBackgroundResource(android.R.drawable.list_selector_background);
+
+            // 為個別項目綁定點擊事件
+            if ("登出帳戶".equals(itemText)) {
+                tv.setOnClickListener(v -> {
+                    logoutUser();
+                });
+            } else {
+                tv.setOnClickListener(v -> {
+                    Toast.makeText(MainActivity.this, "點擊了: " + itemText, Toast.LENGTH_SHORT).show();
+                });
+            }
+            menuLayout.addView(tv);
+        }
+
+        // 實例化寬度為 180dp 的 PopupWindow
+        int width = (int) (180 * getResources().getDisplayMetrics().density);
+        PopupWindow popupWindow = new PopupWindow(menuLayout, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popupWindow.setElevation(15);
+        
+        // 顯示在頭像按鈕的正下方
+        popupWindow.showAsDropDown(ivUserAvatar, 0, 10, Gravity.START);
+    }
+
+    /**
+     * 清除本地登入狀態 (登出)
+     */
+    private void logoutUser() {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+
+        checkAndSyncLoginState();
+        Toast.makeText(this, "帳戶已成功登出", Toast.LENGTH_SHORT).show();
     }
 }
