@@ -7,3 +7,5 @@ target/
 build/
 local.properties
 islocaltest.properties
+compiler.xml
+build.gradle

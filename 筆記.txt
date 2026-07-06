@@ -167,3 +167,19 @@ JSON
   "message": "帳戶餘額不足以支付總金額與手續費",
   "data": null
 }
+
+
+====================UI部分=======================
+
+API 架構重構與集中管理 (Network Architecture)
+一開始我們是直接把網路請求寫在一起，為了因應未來您要串接自家的 Oracle 後端，我們進行了 RESTful API 的抽取與模組化：
+
+導入 Retrofit 框架：我們建立了 ApiClient 作為統一的網路工廠（Network Factory），方便未來快速切換不同環境或後端。
+介面化管理：我們建立了 YahooApiService 介面，將 API 網址、前綴、動態參數（如代碼、時間區間 1m / 1d）通通抽離出來由變數帶入，未來要大改或新增 API 時非常有彈性。
+資料模型解析 (DTO)：建立了 YahooChartResponse，利用 Gson 自動將 Yahoo 龐大且複雜的 JSON 資料結構，精確映射成 Java 裡的 List<Double> 物件，大幅簡化了後續的邏輯處理。
+2. 專業 K 線圖表的引入與除錯 (Charting Engine)
+為了讓畫面看起來像專業券商軟體（如 Yahoo 股市），我們引入了強大的圖表套件：
+
+引進 MPAndroidChart：我們將 API 解析出來的 開、高、低、收 陣列，轉換成 CandleEntry 實體，並成功繪製成紅綠分明的 K 線圖。
+解決閃退危機：稍早遇到了因為「資料為空」而導致套件底層拋出 IndexOutOfBoundsException 的閃退問題。我們補上了 entries.isEmpty() 的防呆機制，圖表現在已經能穩定運行。
+支援多維度切換：整合了按鈕切換邏輯，將 API 參數靈活變更為「當沖」、「日線」、「週線」、「月線」。

@@ -1,53 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ConstraintLayout 是 Android 的預設容器，可以讓元件在畫面上做彈性約束 -->
-<androidx.constraintlayout.widget.ConstraintLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/main"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".MainActivity">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#121212">
 
-    <!--
-      LinearLayout 會把裡面的元件按照 orientation (方向) 進行排列。
-      我們設定為 vertical (垂直排列)，並用 gravity="center" 讓裡面的東西在容器內水平與垂直都居中。
-    -->
+    <!-- 頂部搜尋列：夜間工程模式，極度壓縮空間 -->
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical">
+        
+        <EditText
+            android:id="@+id/etStockSymbol"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2330.TW" 
+            android:hint="輸入股號"
+            android:textColorHint="#757575"
+            android:textColor="#E0E0E0"
+            android:inputType="text"
+            android:padding="8dp"
+            android:backgroundTint="#424242" />
+            
+        <Button
+            android:id="@+id/btnSearch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-        <!--
-          【文字顯示框 (TextView)】
-          - android:id 是我們在 Java 中要用來尋找這個元件的身份證。
-          - 預設 android:text 為空，因為我們想等按下按鈕後才顯示 Hello World。
-          - textSize 設定為 24sp (sp 是 Android 中字體大小的單位，會隨系統字體縮放)。
-        -->
-        <TextView
-                android:id="@+id/myTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="24sp"
-                android:text=""
-                android:layout_marginBottom="24dp"/>
-
-        <!--
-          【點擊按鈕 (Button)】
-          - android:id 設定為 myButton。
-          - android:text 為按鈕上顯示的文字。
-        -->
-        <Button
-                android:id="@+id/myButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="點我顯示 Hello World"/>
-
+            android:text="🔍"
+            android:textSize="18sp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="#333333"
+            android:textColor="#FFFFFF" />
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>

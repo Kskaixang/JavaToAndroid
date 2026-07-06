@@ -62,6 +62,9 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
 
+    // 圖表繪製 (MPAndroidChart)
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
     // 在每次編譯完 Debug 版本時，自動將 APK 複製到專案最外層根目錄
     // 支援雙路徑檢查的自動複製腳本
     tasks.whenTaskAdded { task ->

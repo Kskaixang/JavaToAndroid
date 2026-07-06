@@ -1,115 +1,60 @@
 package com.example.javatoandroid;
 
+import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.EditText;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.javatoandroid.model.entity.ApiResponse;
-import com.example.javatoandroid.model.service.ApiService;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-import com.example.javatoandroid.BuildConfig; // 手動引入自動生成的 BuildConfig 類別
-
-// 宣告類別，MainActivity 繼承自 AppCompatActivity (Android 的標準 Activity 視窗基底)
+/**
+ * 重構後的主畫面 (Activity)。
+ * 現在它不再身兼多職 (不再親自處理圖表與 API)，而是成為一個純粹的「外殼」。
+ * 它的唯一工作是：提供上方搜尋列，並將使用者的指令傳遞給裝載於內部的 Fragment。
+ * 這樣設計能大幅降低維護難度！
+ */
 public class MainActivity extends AppCompatActivity {
 
-    // 宣告畫面上用來顯示時間的文字元件 (TextView)
-    private TextView timeTextView;
-    // 宣告使用者點擊觸發連線的按鈕元件 (Button)
-    private Button fetchTimeButton;
-    // 宣告自訂定義 API 連線介面的 ApiService 變數
-    private ApiService apiService;
-    // 當 Activity 視窗被建立時，Android 系統會自動觸發這個生命週期方法
+    private EditText etStockSymbol;
+    private Button btnSearch;
+    private StockChartFragment stockChartFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 根據 islocaltest.properties 其中的開關 is.local.test=??? 動態決定連線網址
-        // 此處會是默認 oracle 用的 false 因為有特地撰寫 忽略properties的追蹤 所以pull下來都會是一致結果
-        // 如果你想新建開發模式 就要重建  islocaltest.properties開關 is.local.test=true
-        String baseUrl = BuildConfig.IS_LOCAL_TEST ? "http://10.0.2.2:8080/" : "http://161.33.157.67:8088/";
-
-        // 呼叫父類別的 onCreate 方法，執行視窗的基礎系統初始化
         super.onCreate(savedInstanceState);
-        // 設定這個 Activity 所要使用的 XML 版面配置檔案 (對應 activity_main.xml)
+        // 綁定主畫面佈局 (內含搜尋列 + Fragment 空白容器)
         setContentView(R.layout.activity_main);
 
-        // 透過元件的 ID 找到 XML 中的文字元件，並指派給變數 timeTextView
-        timeTextView = findViewById(R.id.myTextView);
-        // 透過元件的 ID 找到 XML 中的按鈕元件，並指派給變數 fetchTimeButton
-        fetchTimeButton = findViewById(R.id.myButton);
+        // 綁定上方搜尋列的輸入框與按鈕
+        etStockSymbol = findViewById(R.id.etStockSymbol);
+        btnSearch = findViewById(R.id.btnSearch);
 
-        // 使用 Retrofit.Builder 建構器，用來配置網路連線的各項基礎設定
-        Retrofit retrofit = new Retrofit.Builder()
-                // 設定 API 連線的主機網址 (必須以斜線 / 結尾，指向您的 Oracle 伺服器公網 IP)
-//                .baseUrl("http://161.33.157.67:8088/")
-                .baseUrl(baseUrl)
-                // 指定使用 Gson 作為 JSON 解析器，將伺服器傳回的 JSON 字串自動轉換成 Java 物件
-                .addConverterFactory(GsonConverterFactory.create())
-                // 呼叫 build() 正式建立出配置完畢的 Retrofit 連線實例
-                .build();
+        // 步驟 1：建立並裝載 StockChartFragment 
+        // 這就是組件化 (Component-based) 的精髓
+        if (savedInstanceState == null) {
+            stockChartFragment = new StockChartFragment();
+            // 透過 FragmentManager，把我們寫好的 K 線圖 Fragment 塞進畫面的容器中
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, stockChartFragment)
+                    .commit();
+        } else {
+            // 如果手機翻轉螢幕導致重建，就從系統找回已經存在的 Fragment
+            stockChartFragment = (StockChartFragment) getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+        }
 
-        // 透過 Retrofit 自動產生一個實作了 ApiService 介面的代理物件，供後續發起網路請求
-        apiService = retrofit.create(ApiService.class);
-
-        // 設定按鈕的點擊監聽器，當使用者點擊該按鈕時，會執行括號內的 Lambda 程式碼
-        fetchTimeButton.setOnClickListener(v -> {
-            // 呼叫我們自訂的 fetchTimeFromServer 方法發起網路請求
-            fetchTimeFromServer();
-        });
-    }
-
-    // 自訂方法：發起網路請求並解析回傳的時間資料
-    private void fetchTimeFromServer() {
-        // 呼叫 apiService 定義好的連線方法，獲取一個包裝好的 Call 物件 (代表一次待執行的網路請求)
-        Call<ApiResponse<String>> call = apiService.getCurrentTime();
-
-        // 使用 enqueue 將請求加入非同步連線佇列，這會在「背景執行緒」中默默執行網路連線
-        // 這樣做能確保手機的主畫面 UI 不會因為網路延遲而發生「畫面卡死/無回應 (ANR)」的問題
-        call.enqueue(new Callback<ApiResponse<String>>() {
-
-            // 當網路請求成功發出，且順利獲得伺服器的 HTTP 回應時，會自動觸發此方法
-            @Override
-            public void onResponse(Call<ApiResponse<String>> call, Response<ApiResponse<String>> response) {
-                // 1. 檢查 HTTP 狀態碼是否成功 (200~299 之間)，且回應的內容物 (body) 不為空值
-                if (response.isSuccessful() && response.body() != null) {
-
-                    // 2. 獲取自動由 Gson 解析轉換完畢的 ApiResponse 物件 (泛型填 String，代表 data 裝載的是字串)
-                    ApiResponse<String> apiResponse = response.body();
-
-                    // 3. 取得 API 回傳物件中的自訂狀態碼 (後端設定的 status，例如 200)
-                    int status = apiResponse.getStatus();
-
-                    // 4. 取得 API 回傳物件中的提示訊息 (後端設定的 message，例如 "時間獲取成功")
-                    String message = apiResponse.getMessage();
-
-                    // 5. 取得 API 物件中實際裝載的內容 (後端設定的 data，也就是台北時間的字串)
-                    String timeData = apiResponse.getData();
-
-                    // 6. 檢查後端自訂的 status 是否為 200 (代表後端的資料邏輯正確無誤)
-                    if (status == 200) {
-                        // 7. 將成功解析出來的時間字串設定到畫面的 TextView 元件上顯示
-                        timeTextView.setText(timeData);
-                    } else {
-                        // 8. 若後端傳回的不是 200，在 TextView 顯示後端回傳的錯誤描述
-                        timeTextView.setText("API 內部錯誤: " + message);
-                    }
-                } else {
-                    // 9. 若 HTTP 連線代碼不成功 (例如伺服器回傳 404 或 500)，在 TextView 顯示 HTTP 錯誤代碼
-                    timeTextView.setText("HTTP 連線錯誤代碼: " + response.code());
+        // 步驟 2：監聽搜尋按鈕的點擊
+        btnSearch.setOnClickListener(v -> {
+            // 取得使用者輸入的字串，去除前後空白
+            String symbol = etStockSymbol.getText().toString().trim();
+            if (!symbol.isEmpty() && stockChartFragment != null) {
+                // 【核心串接】把代號丟給子組件 Fragment，讓它自己去跑網路請求與畫圖
+                stockChartFragment.setStockSymbol(symbol);
+                
+                // (貼心小功能) 按下搜尋後，立刻自動隱藏手機的虛擬小鍵盤
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null && getCurrentFocus() != null) {
+                    imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
                 }
-            }
-
-            // 當網路完全連線失敗時 (例如：手機沒開網、Wi-Fi 斷線、伺服器宕機等) 會自動觸發此方法
-            @Override
-            public void onFailure(Call<ApiResponse<String>> call, Throwable t) {
-                // 1. 在畫面的 TextView 上顯示網路連線失敗的具體異常訊息
-                timeTextView.setText("連線失敗: " + t.getMessage());
-                // 2. 同時將詳細的錯誤堆疊資訊輸出至 Android Studio 的 Logcat 中，供開發人員排錯
-                Log.e("API_ERROR", "連線伺服器時發生例外狀況：", t);
             }
         });
     }
