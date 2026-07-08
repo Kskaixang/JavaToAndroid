@@ -101,6 +101,9 @@ jobs:
             mkdir -p /home/opc/app
             cd /home/opc/app
             
+            # 【關鍵】從 GitHub Secrets 寫入 .env 檔案，供 docker-compose 讀取
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env
+            
             # 5. 批取最新映像檔並重啟 (使用 sudo 確保 100% 權限成功)
             sudo docker compose pull
             sudo docker compose up -d

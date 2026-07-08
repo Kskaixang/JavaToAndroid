@@ -1,3 +1,5 @@
+propertise 亂碼現象 Editor -> File Encodings -> UTF8
+
 第一階段 框架規劃
 
 1.重設git token 安裝IDE android 專案
@@ -38,7 +40,7 @@
 powershell
 
 
-ssh -L 3307:127.0.0.1:3306 -i C:\Users\使用者\Downloads\ssh-key-2026-07-05.key opc@161.33.157.67
+ssh -L 3307:127.0.0.1:3306 -i C:\Users\ks\Downloads\ssh-key-2026-07-05.key opc@161.33.157.67
 執行後，如果終端機詢問 Are you sure you want to continue connecting (yes/no/[fingerprint])?，請輸入 yes 並按 Enter。
 【重要】請保持這個 PowerShell 視窗開啟，不要關閉它！（關閉通道就會斷開）。
 第二步：在 MySQL Workbench 進行標準連線
