@@ -54,6 +54,22 @@ Password: 點擊 Store in Vault 輸入您 Docker MySQL 的密碼（例如 123456
 設定好之後點選 Test Connection，您就會發現順利連上了，而且絕對不會再閃退！
 
 
+新版本
+
+Connection Method: 下拉選擇 Standard TCP/IP over SSH (這會讓 Workbench 在背景幫你自動打通通道)。
+【第一道門設定：SSH 參數】
+
+SSH Hostname: 161.33.157.67:22
+SSH Username: opc (注意字尾是 c，不要打錯囉)
+SSH Key File: 選擇你剛剛複製的 C:\ssh-key-2026-07-05.key
+【第二道門設定：MySQL 參數】
+
+MySQL Hostname: 127.0.0.1 (代表透過 SSH 進入 Oracle 主機後的「本機」)
+MySQL Server Port: 3306
+Username: root
+Password: 點擊 Store in Vault...，然後輸入你剛剛在 GitHub Secrets 重新設定的高強度新密碼。
+
+
 ======================
 
 第三階段
