@@ -4,6 +4,7 @@
 
     <!-- 1. 允許網路權限 包含 android:usesCleartextTraffic="true"-->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
             android:usesCleartextTraffic="true"
@@ -17,7 +18,7 @@
             android:theme="@style/Theme.JavaToAndroid"
             tools:targetApi="31">
     <activity
-            android:name=".MainActivity"
+            android:name=".ui.activity.MainActivity"
             android:exported="true">
         <intent-filter>
             <action android:name="android.intent.action.MAIN"/>
