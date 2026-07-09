@@ -69,11 +69,16 @@
           - 將原先單純的 CandleStickChart 升級為 CombinedChart
           - 支援同時顯示 K線 與 MA5、MA20 均線折線
         -->
-        <com.github.mikephil.charting.charts.CombinedChart
-            android:id="@+id/candleChart"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="220dp"
-            android:layout_marginHorizontal="8dp" />
+            android:layout_marginHorizontal="8dp">
+
+            <com.github.mikephil.charting.charts.CombinedChart
+                android:id="@+id/candleChart"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 
         <!-- 
           【十字指針即時連動數據區塊】 (新增)
@@ -90,15 +95,30 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="4dp">
 
-            <!-- 左側：即時現價與漲跌幅 (維持顯示即時行情，字體大一倍) -->
-            <TextView
-                android:id="@+id/tvStatsPricePercent"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="-- (--%)"
-                android:textColor="#E0E0E0"
-                android:textSize="@dimen/text_size_data_large"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:baselineAligned="true">
+                
+                <TextView
+                    android:id="@+id/tvCurrentPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textColor="#E0E0E0"
+                    android:textSize="@dimen/text_size_data_large"
+                    android:textStyle="bold" />
+                    
+                <TextView
+                    android:id="@+id/tvCurrentPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" (--%)"
+                    android:textColor="#E0E0E0"
+                    android:textSize="@dimen/text_size_data_small"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
 
             <!-- 中間空白彈性填充 -->
             <View
@@ -106,22 +126,12 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <!-- 右側：十字指針座標 (亮色，去掉括號) -->
+            <!-- 刷新按鈕：方塊狀小按鈕 -->
             <TextView
-                android:id="@+id/tvStatsCoordinates"
+                android:id="@+id/btnRefresh"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" -- --"
-                android:textColor="#FFFFFF"
-                android:textSize="@dimen/text_size_data_small"
-                android:layout_marginEnd="6dp" />
-
-            <!-- 重置按鈕：方塊狀小按鈕 -->
-            <TextView
-                android:id="@+id/btnResetCrosshair"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="重置"
+                android:text="刷新"
                 android:textColor="#FFFFFF"
                 android:textSize="@dimen/text_size_data_small"
                 android:background="#2C2C2C"
@@ -147,32 +157,41 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginBottom="12dp">
                 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="該股未實現損益:"
-                    android:textColor="#A0A0A0"
-                    android:textSize="@dimen/text_size_data_medium" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="該股未實現損益"
+                        android:textColor="#A0A0A0"
+                        android:textSize="@dimen/text_size_data_small" />
+                        
+                    <!-- 中間彈性空間 -->
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+                        
+                    <TextView
+                        android:id="@+id/tvUnrealizedPnlPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" (+0.00%)"
+                        android:textColor="#F44336"
+                        android:textSize="@dimen/text_size_data_small" />
+                </LinearLayout>
                     
                 <TextView
                     android:id="@+id/tvUnrealizedPnl"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="***"
                     android:gravity="end"
-                    android:textColor="#F44336"
-                    android:textSize="@dimen/text_size_data_medium"
-                    android:layout_marginEnd="8dp"/>
-                    
-                <TextView
-                    android:id="@+id/tvUnrealizedPnlPercent"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="(+0.00%)"
                     android:textColor="#F44336"
                     android:textSize="@dimen/text_size_data_medium" />
             </LinearLayout>
@@ -292,17 +311,6 @@
                     android:text="＋"
                     android:padding="0dp"
                     android:backgroundTint="#424242"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginEnd="8dp" />
-                    
-                <Button
-                    android:id="@+id/btnFetchPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:text="取價"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="0dp"
-                    android:backgroundTint="#2196F3"
                     android:textColor="#FFFFFF" />
             </LinearLayout>
 
@@ -353,17 +361,6 @@
                     android:padding="0dp"
                     android:backgroundTint="#424242"
                     android:textColor="#FFFFFF" />
-                    
-                <Button
-                    android:id="@+id/btnPlus10Quantity"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:text="+10"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="0dp"
-                    android:backgroundTint="#2196F3"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginStart="8dp"/>
             </LinearLayout>
 
             <!-- Row 5: 試算區塊 (三排式置中表格布局，為餘額爭取最大寬度空間) -->
@@ -384,12 +381,12 @@
                     android:layout_marginBottom="6dp"
                     android:gravity="center_vertical">
                     
-                    <!-- 左列：狀態佔位 (寬度 50dp，留空) -->
+                    <!-- 左列：狀態佔位 (寬度 40dp) -->
                     <TextView
-                        android:layout_width="50dp"
+                        android:layout_width="40dp"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                     
                     <!-- 中間列：餘額標題 -->
                     <TextView
@@ -400,7 +397,7 @@
                         android:textColor="#A0A0A0"
                         android:gravity="end"
                         android:layout_marginEnd="16dp"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                         
                     <!-- 右列：庫存標題 -->
                     <TextView
@@ -410,7 +407,7 @@
                         android:text="庫存"
                         android:textColor="#A0A0A0"
                         android:gravity="end"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                 </LinearLayout>
 
                 <!-- 當前排 -->
@@ -423,11 +420,11 @@
                     
                     <!-- 左列：當前標籤 -->
                     <TextView
-                        android:layout_width="50dp"
+                        android:layout_width="40dp"
                         android:layout_height="wrap_content"
                         android:text="當前"
                         android:textColor="#A0A0A0"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                     
                     <!-- 中間列：銀行餘額值 -->
                     <TextView
@@ -435,11 +432,11 @@
                         android:layout_width="0dp"
                         android:layout_weight="3.5"
                         android:layout_height="wrap_content"
-                        android:text="*****"
+                        android:text="***"
                         android:gravity="end"
                         android:layout_marginEnd="16dp"
                         android:textColor="#A0A0A0"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                         
                     <!-- 右列：當前庫存值 -->
                     <TextView
@@ -447,10 +444,10 @@
                         android:layout_width="0dp"
                         android:layout_weight="0.9"
                         android:layout_height="wrap_content"
-                        android:text="*****"
+                        android:text="***"
                         android:gravity="end"
                         android:textColor="#A0A0A0"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                 </LinearLayout>
 
                 <!-- 成交排 -->
@@ -462,11 +459,11 @@
                     
                     <!-- 左列：成交標籤 -->
                     <TextView
-                        android:layout_width="50dp"
+                        android:layout_width="40dp"
                         android:layout_height="wrap_content"
                         android:text="成交"
                         android:textColor="#A0A0A0"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                     
                     <!-- 中間列：預估成交餘額 -->
                     <TextView
@@ -474,11 +471,11 @@
                         android:layout_width="0dp"
                         android:layout_weight="3.5"
                         android:layout_height="wrap_content"
-                        android:text="*****"
+                        android:text="***"
                         android:gravity="end"
                         android:layout_marginEnd="16dp"
                         android:textColor="#03A9F4"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                         
                     <!-- 右列：預估成交庫存 -->
                     <TextView
@@ -486,10 +483,10 @@
                         android:layout_width="0dp"
                         android:layout_weight="0.9"
                         android:layout_height="wrap_content"
-                        android:text="*****"
+                        android:text="***"
                         android:gravity="end"
                         android:textColor="#03A9F4"
-                        android:textSize="@dimen/text_size_data_medium" />
+                        android:textSize="@dimen/text_size_data_small" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -502,7 +499,7 @@
                 <Button
                     android:id="@+id/btnOrderReport"
                     android:layout_width="0dp"
-                    android:layout_weight="0.4"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:text="委託回報"
                     android:textSize="@dimen/text_size_data_medium"
@@ -513,7 +510,7 @@
                 <Button
                     android:id="@+id/btnSubmitOrder"
                     android:layout_width="0dp"
-                    android:layout_weight="0.6"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:text="確認下單"
                     android:textSize="@dimen/text_size_data_medium"

@@ -72,16 +72,16 @@ public class StockChartFragment extends Fragment implements QuoteListener {
     private CombinedChart candleChart;
 
     // 十字指針數據區 (已美化)
-    private TextView tvStatsPricePercent;
-    private TextView tvStatsCoordinates;
-    private TextView btnResetCrosshair;
+    private TextView tvCurrentPrice;
+    private TextView tvCurrentPercent;
+    private TextView btnRefresh;
 
     // 下單面板 UI
     private TextView tvUnrealizedPnl, tvInventory, tvAccountBalance, tvEstBalance, tvEstInventory;
     private TextView tabBuy, tabSell, tabLimit, tabMarket;
     private Button btnOrderReport, btnSubmitOrder;
     private EditText etPrice, etQuantity;
-    private Button btnMinusPrice, btnPlusPrice, btnMinusQuantity, btnPlusQuantity, btnPlus10Quantity, btnFetchPrice;
+    private Button btnMinusPrice, btnPlusPrice, btnMinusQuantity, btnPlusQuantity;
 
     private StockService stockService;
     private String currentSymbol = "2330.TW"; 
@@ -117,9 +117,9 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             tabMonth = view.findViewById(R.id.tabMonth);
 
             // 綁定即時指標與重置按鈕
-            tvStatsPricePercent = view.findViewById(R.id.tvStatsPricePercent);
-            tvStatsCoordinates = view.findViewById(R.id.tvStatsCoordinates);
-            btnResetCrosshair = view.findViewById(R.id.btnResetCrosshair);
+            tvCurrentPrice = view.findViewById(R.id.tvCurrentPrice);
+            tvCurrentPercent = view.findViewById(R.id.tvCurrentPercent);
+            btnRefresh = view.findViewById(R.id.btnRefresh);
 
             // 綁定下單面板元件
             tvUnrealizedPnl = view.findViewById(R.id.tvUnrealizedPnl);
@@ -141,8 +141,6 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             btnPlusPrice = view.findViewById(R.id.btnPlusPrice);
             btnMinusQuantity = view.findViewById(R.id.btnMinusQuantity);
             btnPlusQuantity = view.findViewById(R.id.btnPlusQuantity);
-            btnPlus10Quantity = view.findViewById(R.id.btnPlus10Quantity);
-            btnFetchPrice = view.findViewById(R.id.btnFetchPrice);
 
             stockService = StockServiceFactory.getService();
             webSocketClient = WebSocketClientFactory.getClient();
@@ -202,9 +200,13 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                 String sign = change > 0 ? "+" : "";
                 String colorStr = change > 0 ? "#F44336" : (change < 0 ? "#4CAF50" : "#E0E0E0");
                 
-                // 特別標記 [即時] 取代 [延遲20分]
-                String formattedText = String.format("<font color='%s'>%.2f (%s%.2f%%)</font> <font color='#FFEB3B'><small>[即時]</small></font>", colorStr, price, sign, percent);
-                tvStatsPricePercent.setText(android.text.Html.fromHtml(formattedText, android.text.Html.FROM_HTML_MODE_COMPACT));
+                // 分別更新最新現價與小字體的漲跌幅
+                tvCurrentPrice.setText(String.format("%.2f", price));
+                tvCurrentPrice.setTextColor(Color.parseColor(colorStr));
+                
+                String percentStr = String.format(" (%s%.2f%%)", sign, percent);
+                tvCurrentPercent.setText(percentStr);
+                tvCurrentPercent.setTextColor(Color.parseColor(colorStr));
                 
                 // 更新下單價格框
                 if (!etPrice.hasFocus()) {
@@ -295,30 +297,35 @@ public class StockChartFragment extends Fragment implements QuoteListener {
         tabWeek.setOnClickListener(v -> switchTab(tabWeek, "1wk", "1y"));
         tabMonth.setOnClickListener(v -> switchTab(tabMonth, "1mo", "5y"));
 
-        // 重置十字指針：重新指向最後一根 K 線，維持指針永不消失 (動態搜尋 Highlight DataSet 解決失效問題)
-        btnResetCrosshair.setOnClickListener(v -> {
-            Log.d(TAG, "onClick: 觸發十字指針重置");
+        // 刷新按鈕：除重置指針外，未來將重新拉取當前介面所有資訊 (餘額、庫存、損益等)，目前先重新加載 K 線資料
+        btnRefresh.setOnClickListener(v -> {
+            Log.d(TAG, "onClick: 觸發刷新與十字指針重置");
             try {
+                // 模擬未來拉取所有介面資訊 (包含重新加載圖表)
+                loadStockData(currentSymbol, currentInterval, getRangeForInterval(currentInterval));
+                
                 if (currentCloses != null && !currentCloses.isEmpty()) {
                     int lastIndex = currentCloses.size() - 1;
                     
+                    // 重置視角與縮放，確保整個走勢圖/K線回到最初的完整畫面
+                    candleChart.fitScreen();
+                    
                     highlightLatestEntry(lastIndex);
                     
-                    // 同步更新座標文字顯示為最新收盤價格
-                    Double latestVal = currentCloses.get(lastIndex);
-                    if (latestVal != null) {
-                        updateCoordinatesText(latestVal);
-                    }
-                    
-                    candleChart.invalidate(); // 強制重繪以顯示十字線
-                    Log.d(TAG, "重置指針成功，位置: " + lastIndex);
-                } else {
-                    Log.w(TAG, "重置失敗: 目前無收盤價資料");
+                    candleChart.invalidate();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "重置按鈕執行錯誤: ", e);
+                Log.e(TAG, "刷新按鈕執行錯誤: ", e);
             }
         });
+    }
+
+    private String getRangeForInterval(String interval) {
+        if ("1m".equals(interval)) return "1d";
+        if ("1d".equals(interval)) return "3mo";
+        if ("1wk".equals(interval)) return "1y";
+        if ("1mo".equals(interval)) return "5y";
+        return "1d";
     }
 
     private void switchTab(TextView selectedTab, String interval, String range) {
@@ -378,21 +385,10 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             tabLimit.setTextColor(Color.parseColor("#A0A0A0"));
         });
 
-        btnMinusPrice.setOnClickListener(v -> adjustValue(etPrice, -0.5, true));
-        btnPlusPrice.setOnClickListener(v -> adjustValue(etPrice, 0.5, true));
+        btnMinusPrice.setOnClickListener(v -> adjustValue(etPrice, -0.01, true));
+        btnPlusPrice.setOnClickListener(v -> adjustValue(etPrice, 0.01, true));
         btnMinusQuantity.setOnClickListener(v -> adjustValue(etQuantity, -1.0, false));
         btnPlusQuantity.setOnClickListener(v -> adjustValue(etQuantity, 1.0, false));
-        btnPlus10Quantity.setOnClickListener(v -> adjustValue(etQuantity, 10.0, false));
-        btnFetchPrice.setOnClickListener(v -> {
-            try {
-                if (currentCloses != null && !currentCloses.isEmpty()) {
-                    Double latestVal = currentCloses.get(currentCloses.size() - 1);
-                    if (latestVal != null) {
-                        etPrice.setText(String.format("%.2f", latestVal));
-                    }
-                }
-            } catch (Exception e) {}
-        });
 
         TextWatcher tw = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -475,8 +471,8 @@ public class StockChartFragment extends Fragment implements QuoteListener {
     private void updateBalanceDisplay() {
         if (isBalanceHidden) {
             tvUnrealizedPnl.setText("***");
-            tvAccountBalance.setText("*****");
-            tvInventory.setText("*****");
+            tvAccountBalance.setText("***");
+            tvInventory.setText("***");
         } else {
             tvUnrealizedPnl.setText("0"); // 移除 $ 符號，節省版面空間
             tvAccountBalance.setText(String.format("%,.0f", mockBalance)); // 移除 $ 符號，節省版面空間
@@ -501,8 +497,8 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             }
             
             if (isBalanceHidden) {
-                tvEstBalance.setText("*****");
-                tvEstInventory.setText("*****");
+                tvEstBalance.setText("***");
+                tvEstInventory.setText("***");
             } else {
                 tvEstBalance.setText(String.format("%,.0f", estBalance)); // 移除 $ 符號，節省版面空間
                 tvEstInventory.setText(String.valueOf(estInventory));
@@ -561,6 +557,11 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             candleChart.setDrawGridBackground(false);
             candleChart.getLegend().setEnabled(false);
             
+            // 🎯 設定自定義 MarkerView (動態跟隨水平線，固定在圖表最右側顯示價格)
+            RightSideMarkerView markerView = new RightSideMarkerView(getContext());
+            markerView.setChartView(candleChart);
+            candleChart.setMarker(markerView);
+            
             // 啟用雙指縮放
             candleChart.setPinchZoom(true);
             candleChart.setDoubleTapToZoomEnabled(true);
@@ -569,6 +570,14 @@ public class StockChartFragment extends Fragment implements QuoteListener {
             xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
             xAxis.setDrawGridLines(false);
             xAxis.setTextColor(Color.parseColor("#A0A0A0")); 
+
+            // 🎯 防滑動干擾：當使用者碰觸圖表區時，不允許 ScrollView 攔截滑動事件
+            candleChart.setOnTouchListener((v, event) -> {
+                if (v.getParent() != null) {
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                }
+                return false;
+            });
             
             xAxis.setValueFormatter(new ValueFormatter() {
                 private SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
@@ -601,11 +610,7 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                         int index = (int) e.getX();
                         if (currentCloses != null && index >= 0 && index < currentCloses.size()) {
                             Double selectedPrice = currentCloses.get(index);
-                            
-                            if (selectedPrice != null) {
-                                // 僅連動座標顯示，不更動左側最新價格顯示 (使用 Spannable 動態渲染顏色)
-                                updateCoordinatesText(selectedPrice);
-                            }
+                            // MarkerView 會自動處理價格顯示，這裡不需要額外操作
                         }
                     } catch (Exception ex) {
                         Log.e(TAG, "onValueSelected 運算錯誤: ", ex);
@@ -630,30 +635,46 @@ public class StockChartFragment extends Fragment implements QuoteListener {
         }
     }
 
-    /**
-     * 更新十字游標座標 TextView 的值 (僅顯示價格，且價格會動態標記紅綠色，時間與漲跌幅資訊已移除)
-     */
-    private void updateCoordinatesText(Double selectedPrice) {
-        try {
-            if (selectedPrice == null) {
-                tvStatsCoordinates.setText(" --");
-                return;
+    // 🎯 自定義 MarkerView，用於在十字水平線最右側顯示價格標籤
+    private class RightSideMarkerView extends com.github.mikephil.charting.components.MarkerView {
+        private TextView tvContent;
+
+        public RightSideMarkerView(android.content.Context context) {
+            super(context, R.layout.marker_right_side);
+            tvContent = findViewById(R.id.tvContent);
+        }
+
+        @Override
+        public void refreshContent(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight highlight) {
+            double selectedPrice = e.getY();
+            
+            // 嘗試取得更準確的收盤價
+            if (e instanceof com.github.mikephil.charting.data.CandleEntry) {
+                selectedPrice = ((com.github.mikephil.charting.data.CandleEntry) e).getClose();
+            } else if (currentCloses != null && (int)e.getX() >= 0 && (int)e.getX() < currentCloses.size()) {
+                Double close = currentCloses.get((int)e.getX());
+                if (close != null) selectedPrice = close;
             }
 
-            // 🎯 使用全局當日昨收價格 (todayPreviousClose) 作為漲跌判斷基準
-            double percent = todayPreviousClose > 0 ? ((selectedPrice - todayPreviousClose) / todayPreviousClose) * 100 : 0.0;
-            String priceStr = String.format("%.2f", selectedPrice);
+            // 全部強制顯示為白色 (依使用者要求)
+            int color = Color.WHITE;
+            
+            tvContent.setText(String.format("價格 %.2f", selectedPrice));
+            tvContent.setTextColor(color);
+            
+            super.refreshContent(e, highlight);
+        }
 
-            SpannableStringBuilder builder = new SpannableStringBuilder();
-            builder.append(priceStr);
-
-            // 決定顏色 (漲紅跌綠)
-            int color = (percent >= 0) ? Color.parseColor("#F44336") : Color.parseColor("#4CAF50");
-            builder.setSpan(new ForegroundColorSpan(color), 0, priceStr.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            tvStatsCoordinates.setText(builder);
-        } catch (Exception e) {
-            Log.e(TAG, "updateCoordinatesText 錯誤: ", e);
+        @Override
+        public com.github.mikephil.charting.utils.MPPointF getOffsetForDrawingAtPoint(float posX, float posY) {
+            // 固定顯示在圖表最右側
+            float chartWidth = getChartView().getWidth();
+            float width = getWidth();
+            float x = chartWidth - width;
+            // 垂直方向稍稍偏上，避免擋到水平線
+            float y = posY - 40f; 
+            if (y < 0) y = 10f;
+            return new com.github.mikephil.charting.utils.MPPointF(x - posX, y - posY);
         }
     }
 
@@ -669,15 +690,19 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                 if (latestPriceVal != null) {
                     double latestPrice = latestPriceVal;
                     
-                    // 🎯 永遠使用今日實際的前一日收盤價 (todayPreviousClose) 計算市價漲跌幅，不隨時間標籤切換而失真！
+                    // 🎯 永遠使用今日實際的前一日收盤價 (todayPreviousClose) 計算市價漲跌幅
                     double percent = todayPreviousClose > 0 ? ((latestPrice - todayPreviousClose) / todayPreviousClose) * 100 : 0.0;
+                    String sign = percent > 0 ? "+" : "";
                     
-                    // 左側現價區：固定顯示最新市價與漲跌幅
-                    tvStatsPricePercent.setText(String.format("%.2f (%.2f%%)", latestPrice, percent));
-                    tvStatsPricePercent.setTextColor(percent >= 0 ? Color.parseColor("#F44336") : Color.parseColor("#4CAF50"));
+                    // 分開設定大字與小字
+                    int color = percent >= 0 ? Color.parseColor("#F44336") : Color.parseColor("#4CAF50");
+                    tvCurrentPrice.setText(String.format("%.2f", latestPrice));
+                    tvCurrentPrice.setTextColor(color);
                     
-                    // 右側座標區：顯示最新一根線的座標 (使用 Spannable)
-                    updateCoordinatesText(latestPrice);
+                    tvCurrentPercent.setText(String.format(" (%s%.2f%%)", sign, percent));
+                    tvCurrentPercent.setTextColor(color);
+                    
+                    // MarkerView 會自動處理價格標籤的隱藏與顯示，這裡無需再隱藏 tvChartOverlayStats
                 }
             }
         } catch (Exception e) {
@@ -686,7 +711,8 @@ public class StockChartFragment extends Fragment implements QuoteListener {
     }
 
     private void loadStockData(String symbol, String interval, String range) {
-        tvStatsPricePercent.setText("載入中...");
+        tvCurrentPrice.setText("--");
+        tvCurrentPercent.setText(" (--%)");
         Log.d(TAG, "loadStockData: 開始拉取 " + symbol + " 資料, 區間: " + interval + ", 範圍: " + range);
 
         stockService.fetchChartData(symbol, interval, range, new com.example.javatoandroid.service.StockServiceCallback() {
@@ -714,9 +740,12 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                         double change = price - basePrice;
                         double percent = basePrice > 0 ? (change / basePrice) * 100 : 0.0;
                         String sign = change > 0 ? "+" : "";
-                        String colorStr = change > 0 ? "#F44336" : (change < 0 ? "#4CAF50" : "#E0E0E0");
-                        String formattedText = String.format("<font color='%s'>%.2f (%s%.2f%%)</font> <font color='#888888'><small>[延遲20分]</small></font>", colorStr, price, sign, percent);
-                        tvStatsPricePercent.setText(android.text.Html.fromHtml(formattedText, android.text.Html.FROM_HTML_MODE_COMPACT));
+                        String colorStr = change >= 0 ? "#F44336" : "#4CAF50";
+                        
+                        tvCurrentPrice.setText(String.format("%.2f", price));
+                        tvCurrentPrice.setTextColor(Color.parseColor(colorStr));
+                        tvCurrentPercent.setText(String.format(" (%s%.2f%%)", sign, percent));
+                        tvCurrentPercent.setTextColor(Color.parseColor(colorStr));
                         
                         // 圖表陣列防護
                         if (data.isChartDataMissing) {
@@ -977,7 +1006,8 @@ public class StockChartFragment extends Fragment implements QuoteListener {
 
                     } catch (Exception e) {
                         Log.e(TAG, "資料解析或渲染失敗: ", e);
-                        tvStatsPricePercent.setText("解析異常");
+                        tvCurrentPrice.setText("解析異常");
+                        tvCurrentPercent.setText("");
                     }
                 });
             }
@@ -987,7 +1017,8 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                 if (getActivity() == null) return;
                 getActivity().runOnUiThread(() -> {
                     Log.e(TAG, "onFailure 資料獲取失敗: " + errorMessage);
-                    tvStatsPricePercent.setText("失敗: " + errorMessage);
+                    tvCurrentPrice.setText("失敗");
+                    tvCurrentPercent.setText("");
                 });
             }
         });
@@ -1014,10 +1045,13 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                           com.github.mikephil.charting.interfaces.datasets.IDataSet set = subData.getDataSetByIndex(setIdx);
                           if (set != null && set.isHighlightEnabled()) {
                               float yVal = 0f;
-                              if (set.getEntryCount() > lastIndex) {
-                                  yVal = set.getEntryForIndex(lastIndex).getY();
+                              float xVal = (float) lastIndex;
+                              if (set.getEntryCount() > 0) {
+                                  com.github.mikephil.charting.data.Entry lastDataEntry = set.getEntryForIndex(set.getEntryCount() - 1);
+                                  xVal = lastDataEntry.getX();
+                                  yVal = lastDataEntry.getY();
                               }
-                              com.github.mikephil.charting.highlight.Highlight hl = new com.github.mikephil.charting.highlight.Highlight((float) lastIndex, yVal, setIdx);
+                              com.github.mikephil.charting.highlight.Highlight hl = new com.github.mikephil.charting.highlight.Highlight(xVal, yVal, setIdx);
                               hl.setDataIndex(dataIdx); // 設定 sub-data 類型索引
                               highlight = hl;
                               break;

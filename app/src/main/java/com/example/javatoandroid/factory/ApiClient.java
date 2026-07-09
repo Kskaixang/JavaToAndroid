@@ -41,8 +41,8 @@ public class ApiClient {
             // 建立自訂的 OkHttpClient，加入攔截器與超時設定
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(authInterceptor)
-                    .connectTimeout(15, TimeUnit.SECONDS)
-                    .readTimeout(15, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
                     .build();
 
             // 建立 Retrofit

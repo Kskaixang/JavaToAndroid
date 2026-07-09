@@ -39,7 +39,7 @@ android {
         // Google Web Client ID (因為這是公開識別碼，直接寫死在這裡推上 Git 是完全安全且正確的做法)
         def webClientId = "548583807532-061572fv916urkah6a039aalcrjf5f06.apps.googleusercontent.com"
 
-        //自動產生變數
+        // 自動產生變數 (已強制觸發 Gradle 重新編譯以更新手機上的 BuildConfig)
         buildConfigField "boolean", "IS_LOCAL_TEST", isLocal
         buildConfigField "String", "WEB_CLIENT_ID", "\"${webClientId}\""
 
@@ -115,6 +115,12 @@ dependencies {
                         into targetDir
                     }
                     println "====== ✅ APK 複製完成！來源為: " + sourceApk.absolutePath + " ======"
+                    println ""
+                    println "📢 【安全與連線提醒】"
+                    println "👉 若您準備將此 APK 安裝到「實體手機」並連線至 Oracle 雲端主機："
+                    println "👉 務必確認 islocaltest.properties 裡的設定為 [is.local.test = false]"
+                    println "👉 否則手機會嘗試連線到本地虛擬機 IP (10.0.2.2)，導致網路 Timeout！"
+                    println ""
                 } else {
                     println "====== ❌ 複製失敗：找不到任何來源 APK 檔案！ ======"
                 }

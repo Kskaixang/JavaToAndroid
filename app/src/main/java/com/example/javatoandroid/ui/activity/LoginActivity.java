@@ -56,6 +56,15 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInHelper = new GoogleSignInHelper(this);
         authService = new AuthServiceImpl(this);
 
+        // 檢查是否已經有登入的 Token
+        com.example.javatoandroid.utils.TokenStorage tokenStorage = new com.example.javatoandroid.utils.TokenStorage(this);
+        if (tokenStorage.isLoggedIn()) {
+            Log.d(TAG, "已偵測到可用 Token，自動導向主畫面");
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
+        }
+
         btnGoogleSignIn.setOnClickListener(v -> {
             // 點擊登入時，發起 Intent
             Intent signInIntent = googleSignInHelper.getSignInIntent();
