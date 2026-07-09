@@ -99,7 +99,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void onError(String message) {
                         runOnUiThread(() -> {
                             setLoading(false);
-                            tvStatus.setText("後端認證失敗");
+                            tvStatus.setText("認證失敗:\n" + message);
                             Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
                             // 後端驗證失敗時，也可考慮呼叫 googleSignInHelper.signOut() 將 Google 狀態登出
                             googleSignInHelper.signOut();
