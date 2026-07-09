@@ -28,6 +28,14 @@ import com.example.javatoandroid.service.StockService;
 import com.example.javatoandroid.websocket.IQuoteWebSocketClient;
 import com.example.javatoandroid.websocket.QuoteListener;
 import com.example.javatoandroid.factory.WebSocketClientFactory;
+import com.example.javatoandroid.factory.ApiClient;
+import com.example.javatoandroid.service.OrderService;
+import com.example.javatoandroid.service.impl.OrderServiceImpl;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.components.AxisBase;
@@ -401,13 +409,47 @@ public class StockChartFragment extends Fragment implements QuoteListener {
                 double price = Double.parseDouble(etPrice.getText().toString());
                 int quantity = Integer.parseInt(etQuantity.getText().toString());
                 
-                String mockPostJson = String.format(
-                    "{\"symbol\":\"%s\",\"type\":\"%s\",\"price\":%.2f,\"quantity\":%d}",
-                    stockSymbol, tradeType, price, quantity
-                );
+                // 建立要送去後端的下單快照資料
+                Map<String, Object> orderData = new HashMap<>();
+                orderData.put("symbol", stockSymbol);
+                orderData.put("type", tradeType);
+                orderData.put("price", price);
+                orderData.put("quantity", quantity);
+                
+                Toast.makeText(getContext(), "正在送出委託...", Toast.LENGTH_SHORT).show();
+                btnSubmitOrder.setEnabled(false);
 
-                Toast.makeText(getContext(), "送出訂單 JSON:\n" + mockPostJson, Toast.LENGTH_LONG).show();
-                btnOrderReport.setText("前筆委託: 已送出");
+                // 透過 Retrofit 發送請求，AuthInterceptor 會自動將登入後的 JWT 塞入 Headers
+                OrderService orderService = new OrderServiceImpl(requireContext());
+                orderService.submitOrder(orderData, new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                btnSubmitOrder.setEnabled(true);
+                                if (response.isSuccessful()) {
+                                    Toast.makeText(getContext(), "下單成功！已發送至後端", Toast.LENGTH_SHORT).show();
+                                    btnOrderReport.setText("已成交");
+                                } else {
+                                    Toast.makeText(getContext(), "下單失敗 (可能未登入或授權過期): " + response.code(), Toast.LENGTH_LONG).show();
+                                    btnOrderReport.setText("失敗 (" + response.code() + ")");
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                btnSubmitOrder.setEnabled(true);
+                                Toast.makeText(getContext(), "網路錯誤: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                btnOrderReport.setText("網路錯誤");
+                            });
+                        }
+                    }
+                });
+
             } catch (Exception e) {
                 Toast.makeText(getContext(), "請輸入正確的價格與數量", Toast.LENGTH_SHORT).show();
             }

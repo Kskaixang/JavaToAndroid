@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="歡迎登入 JavaToAndroid"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="32dp"/>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="請點擊下方按鈕登入"
+        android:textColor="#666666"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Google 官方建議的 SignInButton 或是普通的 Button 也可以，這裡使用一般按鈕方便修改樣式 -->
+    <Button
+        android:id="@+id/btnGoogleSignIn"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="透過 Google 登入"
+        android:textSize="16sp"
+        android:backgroundTint="#FFFFFF"
+        android:textColor="#757575"
+        android:drawableLeft="@android:drawable/ic_menu_myplaces" 
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:textAllCaps="false"/>
+    
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:visibility="gone"/>
+
+</LinearLayout>

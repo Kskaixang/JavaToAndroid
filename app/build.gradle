@@ -19,15 +19,29 @@ android {
 
         //本地開發模式 設定檔加載
         Properties properties = new Properties()
+        
+        // 先載入標準的 local.properties
+        File localPropertiesFile = project.rootProject.file('local.properties')
+        if (localPropertiesFile.exists()) {
+            properties.load(localPropertiesFile.newDataInputStream())
+        }
+        
+        // 再載入我們的自訂 islocaltest.properties (若有重複會覆蓋)
         File configFile = project.rootProject.file('islocaltest.properties')
         //如果檔案存在就載入內容
         if (configFile.exists()) {
             properties.load(configFile.newDataInputStream())
         }
-        //取得設定檔內容
+        
+        //取得設定檔內容 (is.local.test 決定連線到本機還是雲端)
         def isLocal = properties.getProperty('is.local.test', 'false')
+        
+        // Google Web Client ID (因為這是公開識別碼，直接寫死在這裡推上 Git 是完全安全且正確的做法)
+        def webClientId = "548583807532-061572fv916urkah6a039aalcrjf5f06.apps.googleusercontent.com"
+
         //自動產生變數
         buildConfigField "boolean", "IS_LOCAL_TEST", isLocal
+        buildConfigField "String", "WEB_CLIENT_ID", "\"${webClientId}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -45,6 +59,9 @@ android {
 }
 
 dependencies {
+    // Google Sign-In SDK
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'
+
     // 降級為與 Android 14 (API 34) 相容的穩定版本
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
@@ -61,6 +78,9 @@ dependencies {
     // HTTP 連線與 JSON 解析 (Retrofit + Gson)
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+    // 圖片載入庫 (Glide) 用於顯示 Google 頭像
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
 
     // 圖表繪製 (MPAndroidChart)
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'

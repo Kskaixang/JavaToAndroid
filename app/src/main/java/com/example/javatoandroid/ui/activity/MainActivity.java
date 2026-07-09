@@ -3,7 +3,11 @@ package com.example.javatoandroid.ui.activity;
 import com.example.javatoandroid.R;
 import com.example.javatoandroid.ui.fragment.StockChartFragment;
 import com.example.javatoandroid.utils.NetworkMonitor;
+import com.example.javatoandroid.utils.SessionCleanManager;
+import com.example.javatoandroid.utils.TokenStorage;
 import com.example.javatoandroid.ui.dialog.NetworkWarningDialog;
+import android.content.Intent;
+import com.bumptech.glide.Glide;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -94,13 +98,14 @@ public class MainActivity extends AppCompatActivity {
 
         // 步驟 4：設定 Google 頭像按鈕點擊監聽
         ivUserAvatar.setOnClickListener(v -> {
-            boolean isLoggedIn = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
-            if (isLoggedIn) {
-                // 已登入：跳出模擬的漢堡選單 (常規功能選單)
+            TokenStorage tokenStorage = new TokenStorage(this);
+            if (tokenStorage.isLoggedIn()) {
+                // 已登入：跳出漢堡選單 (常規功能選單)
                 showUserMenu();
             } else {
-                // 未登入：啟動模擬的 Google 授權登入流程
-                triggerGoogleLogin();
+                // 未登入：跳轉至真正的登入頁面
+                Intent intent = new Intent(this, LoginActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -171,11 +176,20 @@ public class MainActivity extends AppCompatActivity {
      * 檢查並同步使用者的 Google 登入頭像狀態
      */
     private void checkAndSyncLoginState() {
-        boolean isLoggedIn = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
-        if (isLoggedIn) {
-            // 已登入：將頭像改為綠色的已驗證打勾小人 (代表 Google 登入狀態)
-            ivUserAvatar.setImageResource(android.R.drawable.presence_online);
-            ivUserAvatar.setBackgroundColor(Color.parseColor("#4CAF50")); // 綠底
+        TokenStorage tokenStorage = new TokenStorage(this);
+        if (tokenStorage.isLoggedIn()) {
+            String avatarUrl = tokenStorage.getAvatarUrl();
+            if (avatarUrl != null) {
+                // 使用 Glide 載入 Google 頭像並裁切成圓形
+                Glide.with(this)
+                     .load(avatarUrl)
+                     .circleCrop()
+                     .into(ivUserAvatar);
+            } else {
+                // 已登入但無頭像網址 (Fallback)：顯示預設線上圖標
+                ivUserAvatar.setImageResource(android.R.drawable.presence_online);
+                ivUserAvatar.setBackgroundColor(Color.parseColor("#4CAF50")); // 綠底
+            }
         } else {
             // 未登入：維持預設淡灰色位置圖標
             ivUserAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
@@ -183,23 +197,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 觸發模擬的 Google 登入程序
-     */
-    private void triggerGoogleLogin() {
-        Toast.makeText(this, "正在轉跳 Google 授權登入...", Toast.LENGTH_SHORT).show();
-        
-        // 延時模擬登入成功 (存入 Token，維持登入狀態)
-        ivUserAvatar.postDelayed(() -> {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(KEY_IS_LOGGED_IN, true);
-            editor.putString(KEY_GOOGLE_TOKEN, "mock-google-oauth2-token-20260706");
-            editor.apply();
-
-            checkAndSyncLoginState();
-            Toast.makeText(MainActivity.this, "Google 登入成功！(Token 已存入本機免登)", Toast.LENGTH_LONG).show();
-        }, 1200);
-    }
+    // (舊版模擬登入程序已移除，改為直接跳轉 LoginActivity)
 
     /**
      * 顯示已登入使用者的漢堡選單 (PopupWindow)
@@ -251,11 +249,15 @@ public class MainActivity extends AppCompatActivity {
      * 清除本地登入狀態 (登出)
      */
     private void logoutUser() {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.clear();
-        editor.apply();
+        Toast.makeText(this, "正在登出與清理環境...", Toast.LENGTH_SHORT).show();
 
-        checkAndSyncLoginState();
-        Toast.makeText(this, "帳戶已成功登出", Toast.LENGTH_SHORT).show();
+        // 呼叫統整的 Clean Service，取得跳轉至登入頁的 Intent
+        Intent intent = SessionCleanManager.clearSessionAndGetIntent(this);
+        
+        // 執行跳轉
+        startActivity(intent);
+        
+        // 呼叫 finish() 雙重保證當前 Activity 被銷毀
+        finish();
     }
 }
