@@ -2,6 +2,7 @@ package com.example.javatoandroid.websocket;
 
 import okhttp3.OkHttpClient;
 import java.util.concurrent.TimeUnit;
+import com.example.javatoandroid.BuildConfig;
 
 /**
  * WebSocket 連線配置與工廠
@@ -9,8 +10,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class WebSocketClientConfig {
 
-    // Oracle WebSocket 端點 (Android 模擬器連本機後端請用 10.0.2.2，若是實機請改成實際 IP)
-    public static final String ORACLE_WEBSOCKET_URL = "ws://10.0.2.2:8080/ws/quote";
+    // Oracle WebSocket 端點 (實機測試根據 IS_LOCAL_TEST 切換)
+    public static final String ORACLE_WEBSOCKET_URL = BuildConfig.IS_LOCAL_TEST ? 
+            "ws://10.0.2.2:8080/ws/quote" : "ws://161.33.157.67:8088/ws/quote";
     
     private static OkHttpClient webSocketClient = null;
 

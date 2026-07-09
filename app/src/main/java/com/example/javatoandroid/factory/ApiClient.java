@@ -19,8 +19,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiClient {
 
     // 依據是否為本機測試切換不同的後端 URL
+    // (原本您已經寫好的正確版本，我之前重構時不小心覆蓋成 placeholder 了)
     private static final String BASE_URL = BuildConfig.IS_LOCAL_TEST ? 
-            "http://10.0.2.2:8080/" : "https://your-production-url.com/";
+            "http://10.0.2.2:8080/" : "http://161.33.157.67:8088/";
 
     private static Retrofit retrofit = null;
 
